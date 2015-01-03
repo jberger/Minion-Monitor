@@ -27,18 +27,29 @@ sub run {
     return 1;
   });
 
-  $api->any('/stats' => sub {
+  $api->get('/stats' => sub {
     my $c = shift;
     $c->render(json => $c->app->minion->stats);
   });
 
-  $api->any('/job/:id' => sub {
+  $api->get('/job/:id' => sub {
     my $c = shift;
-    my $id = $c->stash('id');
     $c->render(json => $c->app->minion->backend->job_info($c->stash('id')));
   });
 
-  $api_list->any('/jobs' => sub {
+  $api->delete('/job/:id' => sub {
+    my $c = shift;
+    my $success = $c->app->minion->backend->remove_job($c->stash('id'));
+    $c->render(json => {success => $success ? \1 : \0});
+  });
+
+  $api->patch('/job/:id' => sub {
+    my $c = shift;
+    my $success = $c->app->minion->backend->retry_job($c->stash('id'));
+    $c->render(json => {success => $success ? \1 : \0});
+  });
+
+  $api_list->get('/jobs' => sub {
     my $c = shift;
     my $options = {
       state => $c->param('state'),
@@ -47,12 +58,12 @@ sub run {
     $c->render(json => $c->app->minion->backend->list_jobs(@{$c->stash}{qw/offset limit/}, $options));
   });
   
-  $api->any('/worker/:id' => sub {
+  $api->get('/worker/:id' => sub {
     my $c = shift;
     $c->render(json => $c->app->minion->backend->worker_info($c->stash('id')));
   });
 
-  $api_list->any('/workers' => sub {
+  $api_list->get('/workers' => sub {
     my $c = shift;
     $c->render(json => $c->app->minion->backend->list_workers(@{$c->stash}{qw/offset limit/}));
   });
