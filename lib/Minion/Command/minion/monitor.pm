@@ -27,39 +27,32 @@ sub run {
     return 1;
   });
 
-  my $jobs = sub {
-    my $c = shift;
-    my $options = {
-      state => $c->param('state'),
-      task  => $c->param('task'),
-    };
-    $c->render(json => $c->app->minion->backend->list_jobs(@{$c->stash}{qw/offset limit/}, $options));
-  };
-
   $api->get('/stats' => sub {
     my $c = shift;
     $c->render(json => $c->app->minion->stats);
   });
 
-  $api_list->get('/task/:task' => $jobs);
-
-  $api->post('/task/:task' => sub {
-    my $c = shift;
-    my $minion = $c->app->minion;
-    my $task = $c->stash('task');
-    unless ($minion->tasks->{$task}) {
-      return $c->render(json => {success => \0}, status => 404);
-    }
-    my $input = $c->req->json || {};
-    my $args = delete $input->{args} || [];
-    my %options; @options{qw/delay priority/} = @{$input}{qw/delay priority/};
-    my $job = $minion->enqueue($task, $args, \%options);
-    $c->render(json => {success => \1, id => $job});
-  });
-
   $api->get('/tasks' => sub {
     my $c = shift;
     $c->render(json => [keys %{$c->app->minion->tasks}]);
+  });
+
+  $api->post('/job' => sub {
+    my $c = shift;
+    my $minion = $c->app->minion;
+    my $input = $c->req->json || {};
+
+    my $task = $input->{task};
+    unless ($minion->tasks->{$task}) {
+      return $c->render(json => {success => \0}, status => 404);
+    }
+
+    my $args = $input->{args} || [];
+    my @valid = qw/delay priority/;
+    my %options; @options{@valid} = @{$input}{@valid};
+
+    my $job = $minion->enqueue($task, $args, \%options);
+    $c->render(json => {success => \1, id => $job});
   });
 
   $api->get('/job/:id' => sub {
@@ -79,8 +72,15 @@ sub run {
     $c->render(json => {success => $success ? \1 : \0});
   });
 
-  $api_list->get('/jobs' => $jobs);
-  
+  $api_list->get('/jobs' => sub {
+    my $c = shift;
+    my $options = {
+      state => $c->param('state'),
+      task  => $c->param('task'),
+    };
+    $c->render(json => $c->app->minion->backend->list_jobs(@{$c->stash}{qw/offset limit/}, $options));
+  });
+
   $api->get('/worker/:id' => sub {
     my $c = shift;
     $c->render(json => $c->app->minion->backend->worker_info($c->stash('id')));
