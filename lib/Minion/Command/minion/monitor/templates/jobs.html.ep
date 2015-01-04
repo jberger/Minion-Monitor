@@ -3,7 +3,7 @@
 <div class="ui page grid">
 
   <div class="four wide column">
-    <div class="ui secondard vertical menu">
+    <div class="ui vertical menu">
       % for my $state (qw/all active inactive finished failed/) {
         % my $filter = $state eq 'all' ? '' : $state;
         <a class="item" rv-class-active="jobs.filter.<%= $state %> < state" onclick="set_filter('<%= $filter %>')">
@@ -11,6 +11,17 @@
           <div class="ui label" rv-text="jobs.stats.<%= $state %>_jobs"></div>
         </a>
       % }
+    </div>
+
+    <div class="ui vertical menu">
+      <a class="item" onclick="refresh()">
+        <div class="ui two column grid">
+          <div class="column">Refresh</div>
+          <div class="right floated right aligned column">
+            <div id="refresh" class="ui mini inline loader" rv-class-active="jobs.refreshing"></div>
+          </div>
+        </div>
+      </a>
     </div>
   </div>
 
@@ -77,20 +88,24 @@
       failed: function(){ return this.state === 'failed' },
     },
     stats: {},
+    refreshing: false,
   };
   rivets.bind($('tbody'), {jobs: jobs});
   rivets.bind($('.menu'), {jobs: jobs});
+  rivets.bind($('#refresh'), {jobs: jobs});
 
   var job = {details: {}, url: ''};
   rivets.bind($('#job-modal'), {job: job});
 
   function refresh () {
+    jobs.refreshing = true;
     var query = {};
     if (jobs.filter.state) {
       query.state = jobs.filter.state
     }
     $.get("<%= url_for 'api_jobs' %>", query, function(data) {
       jobs.list = data;
+      jobs.refreshing = false; //TODO time with stats call too.
     });
     $.get("<%= url_for 'api_stats' %>", function(data) {
       jobs.stats = data;
