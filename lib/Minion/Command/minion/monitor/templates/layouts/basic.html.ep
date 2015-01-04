@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    %= stylesheet "https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.5.2/semantic.min.css";
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.5.2/semantic.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rivets/0.7.1/rivets.bundled.min.js"></script>
+  </head>
+  <body><%= content %></body>
+</htmL>
