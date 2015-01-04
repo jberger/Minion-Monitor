@@ -26,7 +26,7 @@
         <tr rv-each-job="jobs.list">
           % for my $col (@cols) {
             <td>
-              %== $col eq 'id' ? q[<a href="#" rv-api="job.url.api" onclick="show_job(this); return false;" rv-text="job.id"></a>] : "{ job.$col }"
+              %== $col eq 'id' ? q[<a rv-api="job.url.api" onclick="show_job(this)" rv-text="job.id"></a>] : "{ job.$col }"
             </td>
           % }
         </tr>
@@ -58,6 +58,10 @@
         <p>Finished: { job.details.finished | date }</p>
       </div>
     </div>
+    <div class="actions">
+      <button class="ui red button" onclick="modify_job('Remove')">Remove</button>
+      <button class="ui green button" onclick="modify_job('Retry')">Retry</button>
+    </div>
   </div>
 </div>
 
@@ -77,7 +81,7 @@
   rivets.bind($('tbody'), {jobs: jobs});
   rivets.bind($('.menu'), {jobs: jobs});
 
-  var job = {details: {}};
+  var job = {details: {}, url: ''};
   rivets.bind($('#job-modal'), {job: job});
 
   function refresh () {
@@ -101,10 +105,23 @@
 
   function show_job(link) {
     var url = $(link).attr('api');
+    job.url = url;
     $.get(url, function(data) {
       job.details = data;
       $('#job-modal').modal('show');
     });
+  }
+
+  function modify_job(type) {
+    actions = {
+      Retry: 'PATCH',
+      Remove: 'DELETE',
+    };
+    $.ajax({
+      url: job.url,
+      type: actions[type],
+      success: function(){ alert(type + ' successful'); refresh() },
+    })
   }
 
   $(refresh);
