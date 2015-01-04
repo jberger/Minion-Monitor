@@ -5,18 +5,40 @@ use Mojo::Base 'Mojolicious::Command';
 use Mojolicious::Command::daemon;
 
 use Mojolicious::Routes;
+use Mojo::Home;
+use File::Spec ();
+
+use constant DEBUG => $ENV{MINION_MONITOR_DEBUG};
 
 has description => 'Monitor your minion workers and tasks via a web interface';
 
 has usage => '';
 
+has home => sub {
+  my $command = shift;
+  my $home = $INC{'Minion/Command/minion/monitor.pm'};
+  $home =~ s/\.pm$//;
+  $home = File::Spec->rel2abs($home);
+  Mojo::Home->new($home);
+};
+
 sub run {
   my ($command, @args) = @_;
 
   my $app = $command->app;
-
   my $r = Mojolicious::Routes->new;
   $app->routes($r);
+
+  my $home = $command->home;
+  $app->log->debug("Home directory: $home") if DEBUG;
+
+  $app->renderer->paths([$home->rel_dir('templates')]);
+  if (DEBUG) {
+    $app->log->debug('Templates directories: ' . $app->dumper($app->renderer->paths));
+  }
+
+  $r->get('/job/:id' => {template => 'job'})->name('job');
+  $r->get('/jobs' => {template => 'jobs'})->name('jobs');
 
   my $api = $r->under('/api');
 
@@ -58,7 +80,7 @@ sub run {
   $api->get('/job/:id' => sub {
     my $c = shift;
     $c->render(json => $c->app->minion->backend->job_info($c->stash('id')));
-  });
+  })->name('api_job');
 
   $api->delete('/job/:id' => sub {
     my $c = shift;
@@ -78,8 +100,16 @@ sub run {
       state => $c->param('state'),
       task  => $c->param('task'),
     };
-    $c->render(json => $c->app->minion->backend->list_jobs(@{$c->stash}{qw/offset limit/}, $options));
-  });
+    my $jobs = $c->app->minion->backend->list_jobs(@{$c->stash}{qw/offset limit/}, $options);
+    for my $job (@$jobs) {
+      my $id = $job->{id};
+      $job->{url} = {
+        api => $c->url_for(api_job => id => $id),
+        web => $c->url_for(job => id => $id),
+      };
+    }
+    $c->render(json => $jobs);
+  })->name('api_jobs');
 
   $api->get('/worker/:id' => sub {
     my $c = shift;
