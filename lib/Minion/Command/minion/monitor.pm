@@ -52,7 +52,7 @@ sub run {
   $api->get('/stats' => sub {
     my $c = shift;
     $c->render(json => $c->app->minion->stats);
-  });
+  })->name('api_stats');
 
   $api->get('/tasks' => sub {
     my $c = shift;

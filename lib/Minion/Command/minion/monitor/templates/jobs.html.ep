@@ -1,29 +1,112 @@
 % layout 'basic';
 
-<table class="ui celled table">
-  <thead><tr>
-    % my @cols = qw/id task args state result priority retries created started finished/;
-    % for my $col (@cols) {
-      <th><%= $col %></th>
-    % }
-  </tr></thead>
-  <tbody>
-    <tr rv-each-job="model.jobs">
-      % for my $col (@cols) {
-        <td>
-          %== $col eq 'id' ? q[<a rv-href="job.url.web" rv-text="job.id"></a>] : "{ job.$col }"
-        </td>
+<div class="ui page grid">
+
+  <div class="four wide column">
+    <div class="ui secondard vertical menu">
+      % for my $state (qw/all active inactive finished failed/) {
+        % my $filter = $state eq 'all' ? '' : $state;
+        <a class="item" rv-class-active="jobs.filter.<%= $state %> < state" onclick="set_filter('<%= $filter %>')">
+          %= ucfirst $state
+          <div class="ui label" rv-text="jobs.stats.<%= $state %>_jobs"></div>
+        </a>
       % }
-    </tr>
-  </tbody>
-</table>
+    </div>
+  </div>
+
+  <div class="twelve wide column">
+    <table class="ui celled table">
+      <thead><tr>
+        % my @cols = qw/id task args state result priority retries/;
+        % for my $col (@cols) {
+          <th><%= $col %></th>
+        % }
+      </tr></thead>
+      <tbody>
+        <tr rv-each-job="jobs.list">
+          % for my $col (@cols) {
+            <td>
+              %== $col eq 'id' ? q[<a href="#" rv-api="job.url.api" onclick="show_job(this); return false;" rv-text="job.id"></a>] : "{ job.$col }"
+            </td>
+          % }
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<div class="ui modals hidden">
+  <div id="job-modal" class="ui modal">
+    <i class="close icon"></i>
+    <div class="header">Job: { job.details.id }</div>
+    <div class="content">
+      <div class="ui raised segment">
+        <label class="ui ribbon label">Definition</label>
+        <p>Task: { job.details.task }</p>
+        <p>Args: { job.details.args }</p>
+        <p>Priority: { job.details.priority }</p>
+        <p>Retries: { job.details.retries }</p>
+
+        <label class="ui ribbon label">Status</label>
+        <p>State: { job.details.state }</p>
+        <p>Results: { job.details.results }</p>
+
+        <label class="ui ribbon label">Timing</label>
+        <p>Created: { job.details.created | date }</p>
+        <p>Started: { job.details.started | date }</p>
+        <p>Finished: { job.details.finished | date }</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 %= javascript begin
-  var model = {jobs: []};
-  rivets.bind($('tbody'), {model: model});
+  var jobs = {
+    list: [],
+    filter: {
+      state: '',
+      all: function(){ return this.state === '' },
+      active: function(){ return this.state === 'active' },
+      inactive: function(){ return this.state === 'inactive' },
+      finished: function(){ return this.state === 'finished' },
+      failed: function(){ return this.state === 'failed' },
+    },
+    stats: {},
+  };
+  rivets.bind($('tbody'), {jobs: jobs});
+  rivets.bind($('.menu'), {jobs: jobs});
+
+  var job = {details: {}};
+  rivets.bind($('#job-modal'), {job: job});
+
   function refresh () {
-    $.get("<%= url_for 'api_jobs' %>", function(data) {
-      model.jobs = data;
+    var query = {};
+    if (jobs.filter.state) {
+      query.state = jobs.filter.state
+    }
+    $.get("<%= url_for 'api_jobs' %>", query, function(data) {
+      jobs.list = data;
+    });
+    $.get("<%= url_for 'api_stats' %>", function(data) {
+      jobs.stats = data;
+      jobs.stats.all_jobs = data.active_jobs + data.inactive_jobs + data.finished_jobs + data.failed_jobs;
     });
   }
+
+  function set_filter(filter) {
+    jobs.filter.state = filter;
+    refresh();
+  }
+
+  function show_job(link) {
+    var url = $(link).attr('api');
+    $.get(url, function(data) {
+      job.details = data;
+      $('#job-modal').modal('show');
+    });
+  }
+
   $(refresh);
 % end
+
