@@ -41,7 +41,13 @@
         <tr rv-each-job="jobs.list">
           % for my $col (@cols) {
             <td>
-              %== $col eq 'id' ? q[<a class="job-link" rv-api="job.url.api" onclick="show_job(this)" rv-text="job.id"></a>] : "{ job.$col }"
+              % if ($col eq 'id') {
+                <a class="job-link" rv-api="job.url.api" onclick="show_job(this)" rv-text="job.id"></a>
+              % } elsif ($col eq 'args') {
+                <pre>{ job.args | json }</pre>
+              % } else {
+                %= "{ job.$col }"
+              % }
             </td>
           % }
         </tr>
@@ -167,6 +173,8 @@
     jobs.page = jobs.page + dir;
     refresh();
   }
+
+  rivets.formatters.json = function(input) { return JSON.stringify(input) }
 
   $(refresh);
 % end
