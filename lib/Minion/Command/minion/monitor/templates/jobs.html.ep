@@ -93,89 +93,99 @@
 </div>
 
 %= javascript begin
-  var page_limit = 100;
-  var jobs = {
-    list: [],
-    filter: {
-      state: '',
-      all: function(){ return this.state === '' },
-      active: function(){ return this.state === 'active' },
-      inactive: function(){ return this.state === 'inactive' },
-      finished: function(){ return this.state === 'finished' },
-      failed: function(){ return this.state === 'failed' },
-    },
-    stats: {},
-    refreshing: false,
-    page: 1,
-    pages: function(){
-      var f = this.filter.state || 'all';
-      var c = this.stats[f+'_jobs'];
-      return Math.ceil(c / page_limit);
-    },
-  };
-  rivets.bind($('tbody'), {jobs: jobs});
-  rivets.bind($('.menu'), {jobs: jobs});
-  rivets.bind($('#refresh'), {jobs: jobs});
-  rivets.bind($('#pagination'), {jobs: jobs});
+  (function() {
+    'use strict';
 
-  var job = {details: {}, url: ''};
-  rivets.bind($('#job-modal'), {job: job});
-
-  function refresh () {
-    jobs.refreshing = true;
-    var query = {
-      limit: page_limit,
-      offset: page_limit * (jobs.page - 1),
+    var page_limit = 100;
+    var jobs = {
+      list: [],
+      filter: {
+        state:    '',
+        all:      function(){ return this.state === '' },
+        active:   function(){ return this.state === 'active' },
+        inactive: function(){ return this.state === 'inactive' },
+        finished: function(){ return this.state === 'finished' },
+        failed:   function(){ return this.state === 'failed' },
+      },
+      stats: {},
+      refreshing: false,
+      page: 1,
+      pages: function(){
+        var f = this.filter.state || 'all';
+        var c = this.stats[f+'_jobs'];
+        return Math.ceil(c / page_limit);
+      }
     };
-    if (jobs.filter.state) {
-      query.state = jobs.filter.state
-    }
-    $.get("<%= url_for 'api_jobs' %>", query, function(data) {
-      jobs.list = data;
-      jobs.refreshing = false; //TODO time with stats call too.
-    });
-    $.get("<%= url_for 'api_stats' %>", function(data) {
-      jobs.stats = data;
-      jobs.stats.all_jobs = data.active_jobs + data.inactive_jobs + data.finished_jobs + data.failed_jobs;
-    });
-  }
 
-  function set_filter(filter) {
-    jobs.filter.state = filter;
-    jobs.page = 1;
-    refresh();
-  }
+    rivets.bind($('tbody'),       {jobs: jobs});
+    rivets.bind($('.menu'),       {jobs: jobs});
+    rivets.bind($('#refresh'),    {jobs: jobs});
+    rivets.bind($('#pagination'), {jobs: jobs});
 
-  function show_job(link) {
-    var url = $(link).attr('api');
-    job.url = url;
-    $.get(url, function(data) {
-      job.details = data;
-      $('#job-modal').modal('show');
-    });
-  }
+    var job = {details: {}, url: ''};
+    rivets.bind($('#job-modal'), {job: job});
 
-  function modify_job(type) {
-    actions = {
-      Retry: 'PATCH',
-      Remove: 'DELETE',
+    var refresh = function() {
+      jobs.refreshing = true;
+
+      var query = {
+        limit:  page_limit,
+        offset: page_limit * (jobs.page - 1),
+      };
+
+      if (jobs.filter.state) {
+        query.state = jobs.filter.state
+      }
+
+      $.get("<%= url_for 'api_jobs' %>", query, function(data) {
+        jobs.list = data;
+        jobs.refreshing = false; //TODO time with stats call too.
+      });
+
+      $.get("<%= url_for 'api_stats' %>", function(data) {
+        jobs.stats = data;
+        jobs.stats.all_jobs = data.active_jobs + data.inactive_jobs + data.finished_jobs + data.failed_jobs;
+      });
     };
-    $.ajax({
-      url: job.url,
-      type: actions[type],
-      success: function(){ alert(type + ' successful'); refresh() },
-    })
-  }
 
-  function move_page(dir) {
-    if (dir === -1 && jobs.page === 1) { return }
-    if (dir === 1  && jobs.page === jobs.pages()) { return }
-    jobs.page = jobs.page + dir;
-    refresh();
-  }
+    var set_filter = function(filter) {
+      jobs.filter.state = filter;
+      jobs.page = 1;
+      refresh();
+    };
 
-  rivets.formatters.json = function(input) { return JSON.stringify(input) }
+    var show_job = function(link) {
+      var url = $(link).attr('api');
+      job.url = url;
 
-  $(refresh);
+      $.get(url, function(data) {
+        job.details = data;
+        $('#job-modal').modal('show');
+      });
+    };
+
+    var modify_job = function(type) {
+      var actions = {
+        Retry: 'PATCH',
+        Remove: 'DELETE',
+      };
+
+      $.ajax({
+        url: job.url,
+        type: actions[type],
+        success: function(){ alert(type + ' successful'); refresh() },
+      });
+    };
+
+    var move_page = function(dir) {
+      if (dir === -1 && jobs.page === 1) { return }
+      if (dir === 1  && jobs.page === jobs.pages()) { return }
+      jobs.page = jobs.page + dir;
+      refresh();
+    };
+
+    rivets.formatters.json = function(input) { return JSON.stringify(input) }
+
+    $(refresh);
+  }());
 % end
-
