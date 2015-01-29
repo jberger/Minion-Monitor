@@ -37,6 +37,8 @@ sub run {
     $app->log->debug('Templates directories: ' . $app->dumper($app->renderer->paths));
   }
 
+  $r->get('/' => sub { shift->redirect_to('jobs') });
+
   $r->get('/job/:id' => {template => 'job'})->name('job');
   $r->get('/jobs' => {template => 'jobs'})->name('jobs');
 
