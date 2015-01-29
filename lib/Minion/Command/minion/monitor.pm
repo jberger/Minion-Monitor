@@ -4,7 +4,6 @@ use Mojo::Base 'Mojolicious::Command::daemon';
 
 use Minion::Monitor;
 
-use Mojolicious::Command::daemon;
 use Mojolicious::Routes;
 
 has description => 'Monitor your minion workers and tasks via a web interface';
