@@ -12,8 +12,7 @@
     <script>
 var routes = {
   jobs: "<%= url_for 'api_jobs' %>",
-  stats: "<%= url_for 'api_stats' %>",
-
+  stats: "<%= url_for 'api_stats' %>"
 };
     </script>
 
