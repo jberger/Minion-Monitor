@@ -8,11 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.5.2/semantic.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/rivets/0.7.1/rivets.bundled.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.min.js"></script>
-    %= javascript begin
-      rivets.formatters.date = function(value){
-        return moment.unix(value).format('MMM DD hh:mm:ss.SSS a')
-      }
-    % end
+
+    <script src="/monitor.js"></script>
   </head>
   <body>
     <div id="main"><%= content %></div>
