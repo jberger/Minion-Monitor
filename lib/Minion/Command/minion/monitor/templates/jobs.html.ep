@@ -96,7 +96,7 @@
   (function() {
     'use strict';
 
-    var page_limit = 100;
+    var page_limit = 10;
     var jobs = {
       list: [],
       filter: {
