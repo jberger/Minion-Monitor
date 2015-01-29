@@ -9,6 +9,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/rivets/0.7.1/rivets.bundled.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.min.js"></script>
 
+    <script>
+var routes = {
+  jobs: "<%= url_for 'api_jobs' %>",
+  stats: "<%= url_for 'api_stats' %>",
+
+};
+    </script>
+
     <script src="/monitor.js"></script>
   </head>
   <body>
