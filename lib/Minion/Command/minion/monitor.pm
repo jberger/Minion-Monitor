@@ -32,8 +32,10 @@ sub run {
   my $home = $command->home;
   $app->log->debug("Home directory: $home") if DEBUG;
 
+  $app->static->paths([$home->rel_dir('public')]);
   $app->renderer->paths([$home->rel_dir('templates')]);
   if (DEBUG) {
+    $app->log->debug('Static file directories: ' . $app->dumper($app->static->paths));
     $app->log->debug('Templates directories: ' . $app->dumper($app->renderer->paths));
   }
 
