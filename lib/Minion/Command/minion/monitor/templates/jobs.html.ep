@@ -10,7 +10,7 @@
     <div class="ui vertical menu">
       % for my $state (qw/all active inactive finished failed/) {
         % my $filter = $state eq 'all' ? '' : $state;
-        <a class="item" rv-class-active="jobs.filter.<%= $state %> < state" onclick="set_filter('<%= $filter %>')">
+        <a class="item func_set_filter" rv-class-active="jobs.filter.<%= $state %> < state" data-filter="<%= $filter %>">
           %= ucfirst $state
           <div class="ui label" rv-text="jobs.stats.<%= $state %>_jobs"></div>
         </a>
@@ -18,7 +18,7 @@
     </div>
 
     <div class="ui vertical menu">
-      <a class="item" onclick="refresh()">
+      <a class="item func_refresh">
         <div class="ui two column grid">
           <div class="column">Refresh</div>
           <div class="right floated right aligned column">
@@ -42,7 +42,7 @@
           % for my $col (@cols) {
             <td>
               % if ($col eq 'id') {
-                <a class="job-link" rv-api="job.url.api" onclick="show_job(this)" rv-text="job.id"></a>
+                <a class="job-link func_show_job" rv-api="job.url.api" rv-text="job.id"></a>
               % } elsif ($col eq 'args') {
                 <pre>{ job.args | json }</pre>
               % } else {
@@ -55,9 +55,9 @@
     </table>
 
     <div id="pagination" class="ui pagination menu">
-      <a class="icon item" onclick="move_page(-1)"><i class="left arrow icon"></i></a>
+      <a class="icon item func_page_left"><i class="left arrow icon"></i></a>
       <a class="item" rv-text="jobs.page"></a>
-      <a class="icon item" onclick="move_page(1)"><i class="right arrow icon"></i></a>
+      <a class="icon item func_page_right"><i class="right arrow icon"></i></a>
     </div>
   </div>
 
@@ -86,8 +86,8 @@
       </div>
     </div>
     <div class="actions">
-      <button class="ui red button" onclick="modify_job('Remove')">Remove</button>
-      <button class="ui green button" onclick="modify_job('Retry')">Retry</button>
+      <button class="ui red button func_remove_job">Remove</button>
+      <button class="ui green button func_retry_job">Retry</button>
     </div>
   </div>
 </div>
@@ -186,6 +186,51 @@
 
     rivets.formatters.json = function(input) { return JSON.stringify(input) }
 
-    $(refresh);
+    $(function() {
+      $('body').on('click', '.func_set_filter', function(evt) {
+        evt.preventDefault();
+
+        var filter = $(this).data('filter');
+        set_filter(filter);
+      });
+
+      $('body').on('click', '.func_show_job', function(evt) {
+        evt.preventDefault();
+
+        show_job(this);
+      });
+
+      $('body').on('click', '.func_refresh', function(evt) {
+        evt.preventDefault();
+
+        refresh();
+      });
+
+      $('body').on('click', '.func_page_left', function(evt) {
+        evt.preventDefault();
+
+        move_page(-1);
+      });
+
+      $('body').on('click', '.func_page_right', function(evt) {
+        evt.preventDefault();
+
+        move_page(1);
+      });
+
+      $('body').on('click', '.func_remove_job', function(evt) {
+        evt.preventDefault();
+
+        modify_job('Remove');
+      });
+
+      $('body').on('click', '.func_retry_job', function(evt) {
+        evt.preventDefault();
+
+        modify_job('Retry');
+      });
+
+      refresh();
+    });
   }());
 % end
