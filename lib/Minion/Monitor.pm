@@ -26,7 +26,7 @@ has parent => sub {
 sub startup {
   my $app = shift;
   $app->helper(minion => sub { shift->app->parent->minion });
-  
+
   my $r = $app->routes;
 
   my $home = $app->home;
@@ -60,7 +60,7 @@ sub startup {
 
   $api->get('/tasks' => sub {
     my $c = shift;
-    $c->render(json => [keys %{$c->app->minion->tasks}]);
+    $c->render(json => [sort keys %{$c->app->minion->tasks}]);
   });
 
   $api->post('/job' => sub {
