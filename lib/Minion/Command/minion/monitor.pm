@@ -8,23 +8,21 @@ use Mojolicious::Routes;
 
 has description => 'Monitor your minion workers and tasks via a web interface';
 
-has usage => '';
+has usage => sub {
+  my $usage = shift->SUPER::usage;
+  $usage =~ s/daemon/minion monitor/g;
+  return $usage;
+};
 
 sub run {
-  my ($command, @args) = @_;
+  my $command = shift;
 
   # replace the app's router and then mount the monitor to /
+  $command->app
+    ->routes(Mojolicious::Routes->new)
+    ->plugin('Minion::Monitor' => { path => '/' });
 
-  my $parent = $command->app;
-  my $r = Mojolicious::Routes->new;
-  $parent->routes($r);
-
-  my $monitor = Mojo::Server->new->build_app('Minion::Monitor');
-  $monitor->parent($parent);
-
-  $r->route('/')->detour(app => $monitor);
-
-  $command->SUPER::run(@args);
+  $command->SUPER::run(@_);
 }
 
 1;
