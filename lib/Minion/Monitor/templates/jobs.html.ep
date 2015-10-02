@@ -32,7 +32,7 @@
   <div class="twelve wide column">
     <table class="ui celled table">
       <thead><tr>
-        % my @cols = qw/id task args state result priority retries/;
+        % my @cols = qw/id task queue args state result priority retries/;
         % for my $col (@cols) {
           <th><%= $col %></th>
         % }
@@ -71,12 +71,13 @@
       <div class="ui raised segment">
         <label class="ui ribbon label">Definition</label>
         <p>Task: { job.details.task }</p>
+        <p>Queue: { job.details.queue }</p>
         <p>Args: { job.details.args }</p>
         <p>Priority: { job.details.priority }</p>
-        <p>Retries: { job.details.retries }</p>
 
         <label class="ui ribbon label">Status</label>
         <p>State: { job.details.state }</p>
+        <p>Retries: { job.details.retries }</p>
         <p>Results: { job.details.results }</p>
 
         <label class="ui ribbon label">Timing</label>
