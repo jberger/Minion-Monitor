@@ -8,8 +8,7 @@ use File::Spec ();
 use constant DEBUG => $ENV{MINION_MONITOR_DEBUG};
 
 sub home {
-  require Minion::Command::minion::monitor;
-  my $home = $INC{'Minion/Command/minion/monitor.pm'};
+  my $home = $INC{'Minion/Monitor.pm'};
   $home =~ s/\.pm$//;
   $home = File::Spec->rel2abs($home);
   Mojo::Home->new($home);
