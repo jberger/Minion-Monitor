@@ -15,17 +15,11 @@ sub home {
   Mojo::Home->new($home);
 };
 
-has parent => sub {
-  require Mojo::Server;
-  my $parent = Mojo::Server->new->build_app('Mojo::HelloWorld');
-  $parent->plugin(Minion => {File => 'minion.db'});
-  return $parent;
-};
-
+has minion => sub { Minion->new({File => 'minion.db'}) };
 
 sub startup {
   my $app = shift;
-  $app->helper(minion => sub { shift->app->parent->minion });
+  $app->helper(minion => sub { shift->app->minion });
 
   my $r = $app->routes;
 

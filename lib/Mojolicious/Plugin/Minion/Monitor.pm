@@ -8,7 +8,8 @@ sub register {
   my ($plugin, $app, $opts) = @_;
   my $path = $opts->{path} or croak 'A "path" argument is required';
 
-  my $monitor = Mojo::Server->new->build_app('Minion::Monitor')->parent($app);
+  my $minion  = eval { $app->minion } || croak 'App does not have a minion attached';
+  my $monitor = Mojo::Server->new->build_app('Minion::Monitor')->minion($minion);
 
   $app->routes->route($path)->detour(app => $monitor);
 }
