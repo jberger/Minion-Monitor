@@ -67,7 +67,7 @@ sub startup {
     }
 
     my $args = $input->{args} || [];
-    my @valid = qw/delay priority/;
+    my @valid = qw/delay priority queue/;
     my %options; @options{@valid} = @{$input}{@valid};
 
     my $job = $minion->enqueue($task, $args, \%options);
