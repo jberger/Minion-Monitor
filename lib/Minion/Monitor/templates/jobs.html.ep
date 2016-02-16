@@ -145,7 +145,7 @@
 
       $.get("<%= url_for 'api_stats' %>", function(data) {
         jobs.stats = data;
-        jobs.stats.all_jobs = data.active_jobs + data.inactive_jobs + data.finished_jobs + data.failed_jobs;
+        jobs.stats.all_jobs = parseInt(data.active_jobs) + parseInt(data.inactive_jobs) + parseInt(data.finished_jobs) + parseInt(data.failed_jobs);
       });
     };
 
