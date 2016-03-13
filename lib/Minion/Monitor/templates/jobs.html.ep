@@ -110,9 +110,9 @@
         this.$broadcast('show_job', job);
       },
     },
+    created: function() {
+      this.$watch('page', function(){ this.refresh() });
+    },
+    ready: function() { this.refresh() },
   });
-
-  vm.$watch('page', function(){ this.refresh() });
-
-  $(function() { vm.refresh() });
 % end
