@@ -1,0 +1,72 @@
+<script type="text/template" id="job-modal-template">
+  <div class="ui modals hidden">
+    <div id="job-modal" class="ui modal">
+      <i class="close icon"></i>
+      <div class="header">Job: {{ details.id }}</div>
+      <div class="content">
+        <div class="ui raised segment">
+          <label class="ui ribbon label">Definition</label>
+          <p>Task: {{ details.task }}</p>
+          <p>Queue: {{ details.queue }}</p>
+          <p>Args: {{ details.args }}</p>
+          <p>Priority: {{ details.priority }}</p>
+
+          <label class="ui ribbon label">Status</label>
+          <p>State: {{ details.state }}</p>
+          <p>Retries: {{ details.retries }}</p>
+          <p>Results: {{ details.results }}</p>
+
+          <label class="ui ribbon label">Timing</label>
+          <p>Created: {{ details.created | date }}</p>
+          <p>Started: {{ details.started | date }}</p>
+          <p>Finished: {{ details.finished | date }}</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="ui red button" @click="remove_job">Remove</button>
+        <button class="ui green button" @click="retry_job">Retry</button>
+      </div>
+    </div>
+  </div>
+</script>
+
+<script>
+  Vue.component('job-modal', {
+    template: '#job-modal-template',
+    data: function() {
+      return { job: {}, details: {} }
+    },
+    events: {
+      'show_job': 'show',
+    },
+    methods: {
+      modify_job: function(type) {
+        var self = this;
+        var actions = {
+          Retry: 'PATCH',
+          Remove: 'DELETE',
+        };
+
+        $.ajax({
+          url: this.job.url.api,
+          type: actions[type],
+          success: function(){
+            alert(type + ' successful');
+            self.$dispatch('updated');
+          },
+        });
+      },
+      remove_job: function() { this.modify_job('Remove') },
+      retry_job:  function() { this.modify_job('Retry')  },
+      show: function(job) {
+        self = this;
+        self.job = job;
+        var url = job.url.api;
+        $.get(url, function(data) {
+          self.details = data;
+          $('#job-modal').modal('show');
+        });
+      },
+    },
+  });
+</script>

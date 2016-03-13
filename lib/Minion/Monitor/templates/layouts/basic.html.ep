@@ -4,15 +4,18 @@
     %= stylesheet "https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.5.2/semantic.min.css";
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.5.2/semantic.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/rivets/0.7.1/rivets.bundled.min.js"></script>
+    <script src="/vue.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.min.js"></script>
     %= javascript begin
-      rivets.formatters.date = function(value){
-        return moment.unix(value).format('MMM DD hh:mm:ss.SSS a')
-      }
+      Vue.filter('date', function(value){
+        if (!value) { return '' }
+        return moment.unix(value).format('MMM DD YYYY, hh:mm:ss.SSS a')
+      });
     % end
   </head>
   <body>
+    %= include 'pager'
+    %= include 'job'
     <div id="main"><%= content %></div>
   </body>
 </htmL>

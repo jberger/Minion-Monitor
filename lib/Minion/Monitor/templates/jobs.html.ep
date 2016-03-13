@@ -4,25 +4,25 @@
   a.job-link { cursor: pointer };
 % end
 
-<div class="ui page grid">
+<div class="ui page grid" id="app">
 
   <div class="four wide column">
     <div class="ui vertical menu">
       % for my $state (qw/all active inactive finished failed/) {
         % my $filter = $state eq 'all' ? '' : $state;
-        <a class="item func_set_filter" rv-class-active="jobs.filter.<%= $state %> < state" data-filter="<%= $filter %>">
+        <a :class="{ 'item': true, 'active': filter === '<%= $state %>'}" @click="set_filter('<%= $filter %>')">
           %= ucfirst $state
-          <div class="ui label" rv-text="jobs.stats.<%= $state %>_jobs"></div>
+          <div class="ui label">{{ stats.<%= $state %>_jobs }}</div>
         </a>
       % }
     </div>
 
     <div class="ui vertical menu">
-      <a class="item func_refresh">
+      <a class="item" @click="refresh">
         <div class="ui two column grid">
           <div class="column">Refresh</div>
           <div class="right floated right aligned column">
-            <div id="refresh" class="ui mini inline loader" rv-class-active="jobs.refreshing"></div>
+            <div id="refresh" :class="{ 'ui': true, 'mini': true, 'inline': true, 'loader': true, 'active': refreshing }"></div>
           </div>
         </div>
       </a>
@@ -38,15 +38,15 @@
         % }
       </tr></thead>
       <tbody>
-        <tr rv-each-job="jobs.list">
+        <tr v-for="job in jobs">
           % for my $col (@cols) {
             <td>
               % if ($col eq 'id') {
-                <a class="job-link func_show_job" rv-api="job.url.api" rv-text="job.id"></a>
+                <a class="job-link" @click="show_job(job)">{{ job.id }}</a>
               % } elsif ($col eq 'args') {
-                <pre>{ job.args | json }</pre>
+                <pre>{{ job.args | json }}</pre>
               % } else {
-                %= "{ job.$col }"
+                %= "{{ job.$col }}"
               % }
             </td>
           % }
@@ -54,184 +54,65 @@
       </tbody>
     </table>
 
-    <div id="pagination" class="ui pagination menu">
-      <a class="icon item func_page_left"><i class="left arrow icon"></i></a>
-      <a class="item" rv-text="jobs.page"></a>
-      <a class="icon item func_page_right"><i class="right arrow icon"></i></a>
-    </div>
+    <pager-widget :page.sync="page" :max="pages"></pager-widget>
   </div>
 
-</div>
-
-<div class="ui modals hidden">
-  <div id="job-modal" class="ui modal">
-    <i class="close icon"></i>
-    <div class="header">Job: { job.details.id }</div>
-    <div class="content">
-      <div class="ui raised segment">
-        <label class="ui ribbon label">Definition</label>
-        <p>Task: { job.details.task }</p>
-        <p>Queue: { job.details.queue }</p>
-        <p>Args: { job.details.args }</p>
-        <p>Priority: { job.details.priority }</p>
-
-        <label class="ui ribbon label">Status</label>
-        <p>State: { job.details.state }</p>
-        <p>Retries: { job.details.retries }</p>
-        <p>Results: { job.details.results }</p>
-
-        <label class="ui ribbon label">Timing</label>
-        <p>Created: { job.details.created | date }</p>
-        <p>Started: { job.details.started | date }</p>
-        <p>Finished: { job.details.finished | date }</p>
-      </div>
-    </div>
-    <div class="actions">
-      <button class="ui red button func_remove_job">Remove</button>
-      <button class="ui green button func_retry_job">Retry</button>
-    </div>
-  </div>
+  <job-modal @updated="refresh"></job-modal>
 </div>
 
 %= javascript begin
-  (function() {
-    'use strict';
-
-    var page_limit = 100;
-    var jobs = {
-      list: [],
-      filter: {
-        state:    '',
-        all:      function(){ return this.state === '' },
-        active:   function(){ return this.state === 'active' },
-        inactive: function(){ return this.state === 'inactive' },
-        finished: function(){ return this.state === 'finished' },
-        failed:   function(){ return this.state === 'failed' },
-      },
-      stats: {},
-      refreshing: false,
+  var vm = new Vue({
+    el: '#app',
+    data: {
+      jobs: [],
       page: 1,
-      pages: function(){
-        var f = this.filter.state || 'all';
+      page_limit: 100,
+      refreshing: false,
+      stats: {},
+    },
+    computed: {
+      pages: function () {
+        var f = this.filter || 'all';
         var c = this.stats[f+'_jobs'];
-        return Math.ceil(c / page_limit);
-      }
-    };
+        return Math.ceil(c / this.page_limit);
+      },
+    },
+    methods: {
+      refresh: function() {
+        this.refreshing = true;
+        self = this;
 
-    rivets.bind($('tbody'),       {jobs: jobs});
-    rivets.bind($('.menu'),       {jobs: jobs});
-    rivets.bind($('#refresh'),    {jobs: jobs});
-    rivets.bind($('#pagination'), {jobs: jobs});
+        var query = {
+          limit:  this.page_limit,
+          offset: this.page_limit * (this.page - 1),
+        };
 
-    var job = {details: {}, url: ''};
-    rivets.bind($('#job-modal'), {job: job});
+        if (this.filter) {
+          query.state = this.filter;
+        }
 
-    var refresh = function() {
-      jobs.refreshing = true;
+        $.get("<%= url_for 'api_jobs' %>", query, function(data) {
+          self.jobs = data;
+          self.refreshing = false; //TODO time with stats call too.
+        });
 
-      var query = {
-        limit:  page_limit,
-        offset: page_limit * (jobs.page - 1),
-      };
+        $.get("<%= url_for 'api_stats' %>", function(data) {
+          data.all_jobs = parseInt(data.active_jobs) + parseInt(data.inactive_jobs) + parseInt(data.finished_jobs) + parseInt(data.failed_jobs);
+          self.stats = data;
+        });
+      },
+      set_filter: function(filter) {
+        this.filter = filter;
+        this.page = 1;
+        this.refresh();
+      },
+      show_job: function(job) {
+        this.$broadcast('show_job', job);
+      },
+    },
+  });
 
-      if (jobs.filter.state) {
-        query.state = jobs.filter.state
-      }
+  vm.$watch('page', function(){ this.refresh() });
 
-      $.get("<%= url_for 'api_jobs' %>", query, function(data) {
-        jobs.list = data;
-        jobs.refreshing = false; //TODO time with stats call too.
-      });
-
-      $.get("<%= url_for 'api_stats' %>", function(data) {
-        jobs.stats = data;
-        jobs.stats.all_jobs = parseInt(data.active_jobs) + parseInt(data.inactive_jobs) + parseInt(data.finished_jobs) + parseInt(data.failed_jobs);
-      });
-    };
-
-    var set_filter = function(filter) {
-      jobs.filter.state = filter;
-      jobs.page = 1;
-      refresh();
-    };
-
-    var show_job = function(link) {
-      var url = $(link).attr('api');
-      job.url = url;
-
-      $.get(url, function(data) {
-        job.details = data;
-        $('#job-modal').modal('show');
-      });
-    };
-
-    var modify_job = function(type) {
-      var actions = {
-        Retry: 'PATCH',
-        Remove: 'DELETE',
-      };
-
-      $.ajax({
-        url: job.url,
-        type: actions[type],
-        success: function(){ alert(type + ' successful'); refresh() },
-      });
-    };
-
-    var move_page = function(dir) {
-      if (dir === -1 && jobs.page === 1) { return }
-      if (dir === 1  && jobs.page === jobs.pages()) { return }
-      jobs.page = jobs.page + dir;
-      refresh();
-    };
-
-    rivets.formatters.json = function(input) { return JSON.stringify(input) }
-
-    $(function() {
-      $('body').on('click', '.func_set_filter', function(evt) {
-        evt.preventDefault();
-
-        var filter = $(this).data('filter');
-        set_filter(filter);
-      });
-
-      $('body').on('click', '.func_show_job', function(evt) {
-        evt.preventDefault();
-
-        show_job(this);
-      });
-
-      $('body').on('click', '.func_refresh', function(evt) {
-        evt.preventDefault();
-
-        refresh();
-      });
-
-      $('body').on('click', '.func_page_left', function(evt) {
-        evt.preventDefault();
-
-        move_page(-1);
-      });
-
-      $('body').on('click', '.func_page_right', function(evt) {
-        evt.preventDefault();
-
-        move_page(1);
-      });
-
-      $('body').on('click', '.func_remove_job', function(evt) {
-        evt.preventDefault();
-
-        modify_job('Remove');
-      });
-
-      $('body').on('click', '.func_retry_job', function(evt) {
-        evt.preventDefault();
-
-        modify_job('Retry');
-      });
-
-      refresh();
-    });
-  }());
+  $(function() { vm.refresh() });
 % end
