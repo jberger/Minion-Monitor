@@ -110,9 +110,7 @@
         this.$broadcast('show_job', job);
       },
     },
-    created: function() {
-      this.$watch('page', function(){ this.refresh() });
-    },
+    watch: { 'page': 'refresh' },
     ready: function() { this.refresh() },
   });
 % end
